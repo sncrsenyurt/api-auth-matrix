@@ -1,0 +1,19 @@
+anonymous: {}
+
+user:
+  headers:
+    Authorization: Bearer ${USER_TOKEN}
+
+admin:
+  headers:
+    Authorization: Bearer ${ADMIN_TOKEN}
+  cookies:
+    session: ${ADMIN_SESSION}
+
+other_user:
+  headers:
+    Authorization: Bearer ${OTHER_USER_TOKEN}
+
+expired:
+  headers:
+    Authorization: Bearer ${EXPIRED_TOKEN}
