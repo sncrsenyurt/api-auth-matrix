@@ -1,0 +1,45 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "shop",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "x-internal": true,
+    "/items": {
+      "get": {
+        "operationId": "listItems",
+        "responses": {
+          "200": { "description": "ok" }
+        }
+      },
+      "post": {
+        "operationId": "createItem",
+        "responses": {
+          "201": { "description": "created" }
+        }
+      }
+    },
+    "/items/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }
+      ],
+      "get": {
+        "operationId": "getItem",
+        "responses": {
+          "200": { "description": "ok" }
+        }
+      },
+      "delete": {
+        "responses": {
+          "204": { "description": "gone" }
+        }
+      }
+    }
+  }
+}
