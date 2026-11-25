@@ -1,0 +1,27 @@
+{
+  "name": "api-auth-matrix",
+  "version": "0.1.0",
+  "description": "Call every OpenAPI operation as every role and compare the result with an access policy.",
+  "license": "MIT",
+  "author": "Irfan Sencer Senyurt",
+  "type": "module",
+  "bin": {
+    "api-auth-matrix": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.58.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
