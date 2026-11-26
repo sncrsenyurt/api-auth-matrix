@@ -16,6 +16,7 @@ describe("listOperations", () => {
       "getOrder",
       "deleteOrder",
       "addNote",
+      "createNote",
       "listNotes",
     ]);
 

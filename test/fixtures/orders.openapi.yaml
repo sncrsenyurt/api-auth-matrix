@@ -54,6 +54,18 @@ paths:
       responses:
         "201":
           description: created
+  /notes:
+    post:
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Note"
+      responses:
+        "201":
+          description: created
   /users/{userId}/notes:
     parameters:
       - name: userId
