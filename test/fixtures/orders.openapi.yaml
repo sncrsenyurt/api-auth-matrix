@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: orders
+  version: "1.0.0"
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      parameters:
+        - $ref: "#/components/parameters/Status"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: ok
+    post:
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderDraft"
+            example:
+              sku: mug
+              qty: 1
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "201":
+          description: created
+  /orders/{id}:
+    $ref: "#/components/pathItems/OneOrder"
+  /orders/{id}/notes:
+    post:
+      operationId: addNote
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Note"
+            examples:
+              rush:
+                value:
+                  kind: gift
+                  text: from-examples
+      responses:
+        "201":
+          description: created
+  /users/{userId}/notes:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: someone
+    get:
+      operationId: listNotes
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: overridden
+      responses:
+        "200":
+          description: ok
+components:
+  pathItems:
+    OneOrder:
+      parameters:
+        - $ref: "#/components/parameters/OrderId"
+      get:
+        operationId: getOrder
+        responses:
+          "200":
+            description: ok
+      delete:
+        operationId: deleteOrder
+        responses:
+          "204":
+            description: gone
+  parameters:
+    OrderId:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/OrderId"
+      example: from-param
+    Status:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum: [open, paid, void]
+  schemas:
+    OrderId:
+      type: string
+      example: from-schema
+    SkuOnly:
+      type: object
+      required: [sku]
+      properties:
+        sku:
+          type: string
+    OrderDraft:
+      allOf:
+        - $ref: "#/components/schemas/SkuOnly"
+        - type: object
+          required: [qty]
+          properties:
+            qty:
+              type: integer
+              default: 1
+            note:
+              type: string
+              enum: [rush, gift]
+    Note:
+      type: object
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [rush, gift]
+        text:
+          type: string
+          example: hello
+        pinned:
+          type: boolean
+          default: false
