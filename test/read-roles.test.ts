@@ -24,7 +24,7 @@ describe("loadRoles", () => {
       "other_user",
       "expired",
     ]);
-    expect(roles[0]).toEqual({ name: "anonymous", headers: {}, cookies: {} });
+    expect(roles[0]).toEqual({ name: "anonymous", headers: {}, cookies: {}, resources: {} });
     expect(roles[1].headers).toEqual({ Authorization: "Bearer user-token-value" });
     expect(roles[1].cookies).toEqual({});
     expect(roles[2].headers).toEqual({ Authorization: "Bearer admin-token-value" });
@@ -42,8 +42,8 @@ describe("loadRoles", () => {
     );
     const roles = await loadRoles(file, { USER_TOKEN: "" });
     expect(roles).toEqual([
-      { name: "anonymous", headers: {}, cookies: {} },
-      { name: "garbage", headers: { Authorization: "Bearer " }, cookies: {} },
+      { name: "anonymous", headers: {}, cookies: {}, resources: {} },
+      { name: "garbage", headers: { Authorization: "Bearer " }, cookies: {}, resources: {} },
     ]);
   });
 
@@ -93,10 +93,10 @@ describe("loadRoles", () => {
     await writeFile(two, "user:\n  token: nope\n  query: also\n");
     await writeFile(bad, "user: admin\n");
     await expect(loadRoles(one, {})).rejects.toThrow(
-      /role "user" has unknown key "token" \(allowed: headers, cookies\)/,
+      /role "user" has unknown key "token" \(allowed: headers, cookies, resources\)/,
     );
     await expect(loadRoles(two, {})).rejects.toThrow(
-      /role "user" has unknown keys "token", "query" \(allowed: headers, cookies\)/,
+      /role "user" has unknown keys "token", "query" \(allowed: headers, cookies, resources\)/,
     );
     await expect(loadRoles(bad, {})).rejects.toThrow(/role "user" must be a mapping/);
   });
@@ -162,6 +162,37 @@ describe("loadRoles", () => {
     await expect(loadRoles(name, {})).rejects.toThrow(/invalid role name/);
     await expect(loadRoles(array, {})).rejects.toThrow(/must be a mapping of role names/);
     await expect(loadRoles(path.join(dir, "nope.yaml"), {})).rejects.toThrow(/roles file not found/);
+  });
+
+  it("reads resource ids and fills placeholders without echoing them", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "roles-"));
+    const file = path.join(dir, "roles.yaml");
+    await writeFile(
+      file,
+      [
+        "user:",
+        "  resources:",
+        "    orderId: ${ORDER_ID}",
+        "    noteId: 15",
+        "other_user:",
+        "  resources:",
+        "    orderId: ${OTHER_ORDER_ID}",
+        "",
+      ].join("\n"),
+    );
+    const roles = await loadRoles(file, { ORDER_ID: "ord-a", OTHER_ORDER_ID: "ord-b" });
+    expect(roles[0].resources).toEqual({ orderId: "ord-a", noteId: "15" });
+    expect(roles[1].resources).toEqual({ orderId: "ord-b" });
+
+    await expect(loadRoles(file, { OTHER_ORDER_ID: "ord-b" })).rejects.toThrow(
+      /role "user": resources\.orderId: missing environment variable \$\{ORDER_ID\}/,
+    );
+    try {
+      await loadRoles(file, { OTHER_ORDER_ID: "ord-b" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      expect(message).not.toContain("ord-b");
+    }
   });
 
   it("rejects duplicate keys and an empty file", async () => {

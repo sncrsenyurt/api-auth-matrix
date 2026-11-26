@@ -1,0 +1,22 @@
+anonymous: {}
+
+user:
+  headers:
+    Authorization: Bearer ${USER_TOKEN}
+  resources:
+    orderId: ${USER_ORDER_ID}
+    userId: user-a
+
+other_user:
+  headers:
+    Authorization: Bearer ${OTHER_USER_TOKEN}
+  resources:
+    orderId: ${OTHER_ORDER_ID}
+    userId: user-b
+
+admin:
+  headers:
+    Authorization: Bearer ${ADMIN_TOKEN}
+  resources:
+    orderId: ord-admin
+    userId: user-admin

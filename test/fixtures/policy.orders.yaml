@@ -1,0 +1,24 @@
+getOrder:
+  allow:
+    - user
+    - admin
+  resources:
+    id: orderId
+
+deleteOrder:
+  allow:
+    - admin
+  resources:
+    id: orderId
+
+addNote:
+  resources:
+    id: orderId
+
+listNotes:
+  resources:
+    userId: userId
+
+"GET /orders/{id}":
+  resources:
+    id: orderId

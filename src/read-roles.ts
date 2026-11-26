@@ -4,12 +4,14 @@ import { parseAllDocuments } from "yaml";
 const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const FIELD_NAME = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const ALLOWED_FIELDS = new Set(["headers", "cookies"]);
+const ALLOWED_FIELDS = new Set(["headers", "cookies", "resources"]);
+const RESOURCE_NAME = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 
 export type RoleAuth = {
   name: string;
   headers: Record<string, string>;
   cookies: Record<string, string>;
+  resources: Record<string, string>;
 };
 
 export async function loadRoles(
@@ -78,7 +80,7 @@ function readRole(
   value: unknown,
   env: Record<string, string | undefined>,
 ): RoleAuth {
-  if (value === null) return { name, headers: {}, cookies: {} };
+  if (value === null) return { name, headers: {}, cookies: {}, resources: {} };
   if (!isRecord(value)) throw new Error(`${filePath}: role "${name}" must be a mapping`);
 
   const unknown = Object.keys(value).filter((key) => !ALLOWED_FIELDS.has(key));
@@ -86,7 +88,7 @@ function readRole(
     const noun = unknown.length === 1 ? "key" : "keys";
     const listed = unknown.map((key) => JSON.stringify(key)).join(", ");
     throw new Error(
-      `${filePath}: role "${name}" has unknown ${noun} ${listed} (allowed: headers, cookies)`,
+      `${filePath}: role "${name}" has unknown ${noun} ${listed} (allowed: headers, cookies, resources)`,
     );
   }
 
@@ -94,6 +96,7 @@ function readRole(
     name,
     headers: readField(filePath, name, "headers", value.headers, env),
     cookies: readField(filePath, name, "cookies", value.cookies, env),
+    resources: readResources(filePath, name, value.resources, env),
   };
 }
 
@@ -118,6 +121,31 @@ function readField(
       throw new Error(`${filePath}: role "${role}": ${field}.${key} must be a string`);
     }
     out[key] = fillPlaceholders(raw, `${filePath}: role "${role}": ${field}.${key}`, env);
+  }
+  return out;
+}
+
+function readResources(
+  filePath: string,
+  role: string,
+  value: unknown,
+  env: Record<string, string | undefined>,
+): Record<string, string> {
+  if (value === undefined) return {};
+  if (!isRecord(value)) throw new Error(`${filePath}: role "${role}": resources must be a mapping`);
+
+  const out: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (!RESOURCE_NAME.test(key)) {
+      throw new Error(`${filePath}: role "${role}": resource name is not valid: ${JSON.stringify(key)}`);
+    }
+    const where = `${filePath}: role "${role}": resources.${key}`;
+    if (typeof raw === "number" && Number.isFinite(raw)) {
+      out[key] = String(raw);
+      continue;
+    }
+    if (typeof raw !== "string") throw new Error(`${where} must be a string`);
+    out[key] = fillPlaceholders(raw, where, env);
   }
   return out;
 }
