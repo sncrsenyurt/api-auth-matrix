@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-import { stat } from "node:fs/promises";
 import { helpText, isHelpRequest, parseFlags, UsageError } from "./parse-flags.js";
+import { listOperations } from "./list-operations.js";
 import { loadOpenApi } from "./read-openapi.js";
+import { loadPolicy } from "./read-policy.js";
 import { loadRoles } from "./read-roles.js";
+import { runMatrix } from "./run-matrix.js";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -14,12 +16,20 @@ async function main(): Promise<void> {
   const flags = parseFlags(argv);
   const spec = await loadOpenApi(flags.spec);
   const roles = await loadRoles(flags.rolesPath);
-  await assertPolicyFile(flags.policyPath);
+  const policy = await loadPolicy(flags.policyPath);
+  const matrix = await runMatrix({
+    operations: listOperations(spec.document, flags.spec),
+    roles,
+    policy,
+    baseUrl: flags.baseUrl,
+    timeoutMs: flags.timeoutMs,
+    extraHeaders: flags.headers,
+  });
 
   const headerCount = flags.headers.length;
   const headerNote = headerCount === 1 ? "1 extra header" : `${headerCount} extra headers`;
   console.log(
-    `openapi ${spec.version} at ${visibleBase(flags.baseUrl)}, ${spec.operations.length} operations, ${roles.length} roles, ${headerNote}, timeout ${flags.timeoutMs}ms, out ${flags.outDir}`,
+    `openapi ${spec.version} at ${visibleBase(flags.baseUrl)}, ${matrix.operations.length} operations, ${matrix.roles.length} roles, ${headerNote}, timeout ${flags.timeoutMs}ms, out ${flags.outDir}`,
   );
 }
 
@@ -31,19 +41,6 @@ function visibleBase(baseUrl: string): string {
   url.hash = "";
   if (url.pathname === "/") return url.origin;
   return `${url.origin}${url.pathname}`;
-}
-
-async function assertPolicyFile(policyPath: string): Promise<void> {
-  let info;
-  try {
-    info = await stat(policyPath);
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") throw new Error(`policy file not found: ${policyPath}`);
-    const message = err instanceof Error ? err.message : String(err);
-    throw new Error(`could not read policy file ${policyPath}: ${message}`);
-  }
-  if (!info.isFile()) throw new Error(`policy path is not a file: ${policyPath}`);
 }
 
 main().then(
