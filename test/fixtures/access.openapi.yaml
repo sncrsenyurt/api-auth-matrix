@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: access
+  version: "1.0.0"
+paths:
+  /open:
+    get:
+      operationId: getOpen
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: ok
+  /account:
+    get:
+      operationId: getAccount
+      responses:
+        "200":
+          description: ok
+  /admin/report:
+    get:
+      operationId: getAdminReport
+      responses:
+        "200":
+          description: ok
+  /notes:
+    post:
+      operationId: createNote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  example: hi
+      responses:
+        "201":
+          description: created
+  /broken:
+    get:
+      operationId: getBroken
+      responses:
+        "500":
+          description: broken
+  /trace:
+    get:
+      operationId: getTrace
+      responses:
+        "200":
+          description: ok
+  /session:
+    get:
+      operationId: getSession
+      responses:
+        "200":
+          description: ok
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: missing
+      responses:
+        "200":
+          description: ok

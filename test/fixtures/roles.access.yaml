@@ -1,0 +1,21 @@
+anonymous: {}
+
+user:
+  headers:
+    Authorization: Bearer user-token
+  cookies:
+    session: yes
+  resources:
+    orderId: ord-a
+
+admin:
+  headers:
+    Authorization: Bearer admin-token
+  cookies:
+    session: yes
+  resources:
+    orderId: ord-admin
+
+expired:
+  headers:
+    Authorization: Bearer not-a-real-token
