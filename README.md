@@ -6,7 +6,7 @@ A role is a name plus headers and cookies. A value can pull from the environment
 
 The spec loader follows local `$ref` pointers when it lists operations. I build a single call from examples, defaults, and enums. A role can carry resource ids, and the policy can map a parameter name onto one of those ids, so user A and user B use different order ids.
 
-The command calls each operation as each role. A 2xx is allowed, 401 and 403 are denied, a network failure or timeout is an error, and any other status stays as it was. It still does not print the matrix or write the json and html report.
+The command calls each operation as each role and prints each mismatch: escalation, object-level, missing-auth, or over-blocked. A 2xx is allowed, 401 and 403 are denied, a network failure or timeout is an error, and any other status stays as it was. It still does not draw the matrix or write the json and html report.
 
 ```
 api-auth-matrix ./openapi.yaml --base-url http://127.0.0.1:3000 --roles roles.yaml --policy policy.yaml
@@ -42,11 +42,17 @@ expired:
     Authorization: Bearer ${EXPIRED_TOKEN}
 ```
 
-The policy names an operation and, when a path parameter is not the resource name, points it at one.
+The policy names an operation. `allow` is a list of role names, or `public`, `admin only`, or `owner only`. When a path parameter is not the resource name, `resources` points it at one.
 
 ```yaml
+getHealth:
+  allow: public
+
+getReport:
+  allow: admin only
+
 getOrder:
-  allow: [user, admin]
+  allow: owner only
   resources:
     id: orderId
 ```

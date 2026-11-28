@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { comparePolicy, formatMismatch } from "./compare-policy.js";
 import { helpText, isHelpRequest, parseFlags, UsageError } from "./parse-flags.js";
 import { listOperations } from "./list-operations.js";
 import { loadOpenApi } from "./read-openapi.js";
@@ -31,6 +32,12 @@ async function main(): Promise<void> {
   console.log(
     `openapi ${spec.version} at ${visibleBase(flags.baseUrl)}, ${matrix.operations.length} operations, ${matrix.roles.length} roles, ${headerNote}, timeout ${flags.timeoutMs}ms, out ${flags.outDir}`,
   );
+  const mismatches = comparePolicy(matrix, policy);
+  if (mismatches.length === 0) {
+    console.log("no mismatches");
+    return;
+  }
+  for (const mismatch of mismatches) console.log(formatMismatch(mismatch));
 }
 
 function visibleBase(baseUrl: string): string {
