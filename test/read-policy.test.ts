@@ -18,6 +18,7 @@ describe("loadPolicy", () => {
     ]);
     expect(operations[0]).toEqual({
       key: "getOrder",
+      access: "listed",
       allow: ["user", "admin"],
       resources: { id: "orderId" },
     });
@@ -37,8 +38,39 @@ describe("loadPolicy", () => {
     await expect(loadPolicy(unknown)).rejects.toThrow(
       /operation "getOrder" has unknown key "mode" \(allowed: allow, resources\)/,
     );
-    await expect(loadPolicy(allow)).rejects.toThrow(/allow must be a list of role names/);
+    await expect(loadPolicy(allow)).rejects.toThrow(
+      /allow must be public, admin only, owner only, or a list of roles/,
+    );
     await expect(loadPolicy(resource)).rejects.toThrow(/resources\.id must name a resource/);
     await expect(loadPolicy(path.join(dir, "nope.yaml"))).rejects.toThrow(/policy file not found/);
+  });
+
+  it("reads public, admin only, and owner only", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "policy-"));
+    const file = path.join(dir, "access.yaml");
+    await writeFile(
+      file,
+      [
+        "getHealth:",
+        "  allow: public",
+        "getReport:",
+        "  allow: Admin Only",
+        "getOrder:",
+        "  allow: owner   only",
+        "  resources:",
+        "    id: orderId",
+        "lockdown:",
+        "  allow: []",
+        "",
+      ].join("\n"),
+    );
+    const operations = await loadPolicy(file);
+    expect(operations.map((operation) => [operation.key, operation.access, operation.allow ?? null])).toEqual([
+      ["getHealth", "public", null],
+      ["getReport", "admin-only", null],
+      ["getOrder", "owner-only", null],
+      ["lockdown", "listed", []],
+    ]);
+    expect(operations[2].resources).toEqual({ id: "orderId" });
   });
 });

@@ -4,9 +4,13 @@ import { parseAllDocuments } from "yaml";
 const ALLOWED_FIELDS = new Set(["allow", "resources"]);
 const RESOURCE_NAME = /^[A-Za-z_][A-Za-z0-9_-]*$/;
 const PARAM_NAME = /^[A-Za-z0-9_.-]+$/;
+const ROLE_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+export type PolicyAccess = "public" | "admin-only" | "owner-only" | "listed";
 
 export type PolicyOperation = {
   key: string;
+  access?: PolicyAccess;
   allow?: string[];
   resources: Record<string, string>;
 };
@@ -98,16 +102,38 @@ function readOperation(filePath: string, key: string, value: unknown): PolicyOpe
     resources: readResourceMap(filePath, key, value.resources),
   };
   const allow = readAllow(filePath, key, value.allow);
-  if (allow) operation.allow = allow;
+  if (allow.access) operation.access = allow.access;
+  if (allow.allow) operation.allow = allow.allow;
   return operation;
 }
 
-function readAllow(filePath: string, key: string, value: unknown): string[] | undefined {
-  if (value === undefined) return undefined;
-  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || entry.length === 0)) {
+function readAllow(
+  filePath: string,
+  key: string,
+  value: unknown,
+): { access?: PolicyAccess; allow?: string[] } {
+  if (value === undefined) return {};
+  if (typeof value === "string") {
+    const access = accessPhrase(value);
+    if (!access) {
+      throw new Error(
+        `${filePath}: operation "${key}": allow must be public, admin only, owner only, or a list of roles`,
+      );
+    }
+    return { access };
+  }
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || !ROLE_NAME.test(entry))) {
     throw new Error(`${filePath}: operation "${key}": allow must be a list of role names`);
   }
-  return value;
+  return { access: "listed", allow: value };
+}
+
+function accessPhrase(value: string): PolicyAccess | undefined {
+  const text = value.trim().toLowerCase().replace(/\s+/g, " ");
+  if (text === "public") return "public";
+  if (text === "admin only") return "admin-only";
+  if (text === "owner only") return "owner-only";
+  return undefined;
 }
 
 function readResourceMap(filePath: string, key: string, value: unknown): Record<string, string> {
